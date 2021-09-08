@@ -58,8 +58,69 @@ def cut(num):
     return float(str_num[:str_num.index('.') + 1 + 6])
 
 #--------------------------------------------------------------------------------
-# 将线矢量中的点单独存储
+# 将线矢量文件中非重复的点单独存储
 def LineSHPToPoint(LineJSON):
     # 传入读取的线矢量字典文件
     linejson = LineJSON
-    
+
+    # 新建list存储线矢量中的点坐标
+    Coord = []
+    # 计算线矢量长度，准备分割线矢量
+    orilen = len(linejson['features'])
+    # 遍历线矢量文件，存储点坐标
+    for i in range(orilen):
+        linecount = len(linejson['features'][i]['geometry']['coordinates'])
+        point = []
+        for j in range(linecount):
+            point = []
+            point.append(linejson['features'][i]['geometry']['coordinates'][j][0])
+            point.append(linejson['features'][i]['geometry']['coordinates'][j][1])
+            Coord.append(point)
+
+    # 去除存储的坐标里重复的坐标
+    CoordSorted = []
+    for i in Coord:
+        if i not in CoordSorted:
+            CoordSorted.append(i)
+    return(CoordSorted)
+
+# 生成点矢量文件
+def GenPointSHP(filepath,coord):
+    # 暂时存储点要素
+    feature = dict()
+    feature["type"] = "FeatureCollection"
+    temp = []
+
+    pointlen = len(coord)
+    for i in range(pointlen):
+        point = dict()
+        point["id"] = i
+        point["type"] = "Feature"
+
+        geometries = dict()
+        geometries["type"] = "Point"
+        coordinates = [coord[i][0], coord[i][1]]
+        geometries["coordinates"] = coordinates
+
+        point["geometry"] = geometries
+
+        temp.append(point)
+
+    feature["features"] = temp
+    savepath = filepath + "/" +"point.json"
+    shppath = filepath + "/" +"pointshp"
+    f = open(savepath, "w")
+    json.dump(feature, f)
+    f.close()
+    data = geopandas.read_file(savepath)
+    data.to_file(shppath, driver='ESRI Shapefile', encoding='utf-8')
+
+#--------------------------------------------------------------------------------
+# 分割线矢量文件，使每条线段仅有两个端点组成
+def LineSHPSplit(LineJson):
+    # 传入原始线矢量文件
+    linejson = LineJson
+
+
+
+    return()
