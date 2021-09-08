@@ -115,12 +115,81 @@ def GenPointSHP(filepath,coord):
     data = geopandas.read_file(savepath)
     data.to_file(shppath, driver='ESRI Shapefile', encoding='utf-8')
 
+    return
+
 #--------------------------------------------------------------------------------
 # 分割线矢量文件，使每条线段仅有两个端点组成
-def LineSHPSplit(LineJson):
+def LineSHPSplit(LineJson,filepath):
     # 传入原始线矢量文件
     linejson = LineJson
 
+    # 暂时存储线要素
+    feature = dict()
+    feature["type"] = "FeatureCollection"
+    templine = []
 
+    # 遍历线矢量 判断单个线要素是否仅由两个点组成
+    orilen = len(linejson['features']) # 原始线要素数量
+    count = 0 # 存储新生成的线要素数量
+    for i in range(orilen):
+        linecount = len(linejson['features'][i]['geometry']['coordinates']) # 计算单个线要素长度
+        if linecount == 2: # 仅有两个端点组成的线要素直接存储
+            templineshp = dict() # 临时存储线要素数据
 
-    return()
+            # 传入线编号、类型及字段信息
+            templineshp["id"] = count
+            templineshp["type"] = "Feature"
+            templineshp["properties"] = linejson["features"][i]["properties"]
+
+            # 传入端点坐标信息
+            geometries = dict()
+            geometries["type"] = "LineString"
+            coordinates = []
+            coordinates.append([linejson["features"][i]["geometry"]["coordinates"][0][0],
+                                linejson["features"][i]["geometry"]["coordinates"][0][1]])
+            coordinates.append([linejson["features"][i]["geometry"]["coordinates"][1][0],
+                                linejson["features"][i]["geometry"]["coordinates"][1][1]])
+            geometries["coordinates"] = coordinates
+            templineshp["geometry"] = geometries
+
+            # 将临时信息传入新线矢量文件中
+            templine.append(templineshp)
+
+            count = count + 1  # 线编号计数
+        else:
+            for j in range(linecount - 1):
+                templineshp = dict()  # 临时存储线要素数据
+
+                # 传入线编号、类型及字段信息
+                templineshp["id"] = count
+                templineshp["type"] = "Feature"
+                templineshp["properties"] = linejson["features"][i]["properties"]
+
+                # 传入端点坐标信息
+                geometries = dict()
+                geometries["type"] = "LineString"
+                coordinates = []
+                coordinates.append([linejson["features"][i]["geometry"]["coordinates"][j][0],
+                                    linejson["features"][i]["geometry"]["coordinates"][j][1]])
+                coordinates.append([linejson["features"][i]["geometry"]["coordinates"][j][0],
+                                    linejson["features"][i]["geometry"]["coordinates"][j][1]])
+                geometries["coordinates"] = coordinates
+                templineshp["geometry"] = geometries
+
+                # 将临时信息传入新线矢量文件中
+                templine.append(templineshp)
+
+                count = count + 1  # 线编号计数
+
+    # 将暂存线要素整合成正确的JSON格式
+    feature["features"] = templine
+
+    savepath = filepath + "/" + "line.json"
+    shppath = filepath + "/" + "lineshp"
+    f = open(savepath, "w")
+    json.dump(feature, f)
+    f.close()
+    data = geopandas.read_file(savepath)
+    data.to_file(shppath, driver='ESRI Shapefile', encoding='utf-8')
+
+    return
